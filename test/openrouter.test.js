@@ -1,0 +1,60 @@
+import OpenAI from "openai"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { jsonResponse, providerResponse } from "./fixtures/provider.js"
+
+beforeEach(() => {
+  process.env.OPENROUTER_API_KEY = "test_key"
+  process.env.OPENROUTER_MODEL = "openai/gpt-oss-120b:free"
+  process.env.OPENROUTER_MAX_TOKENS = "180"
+})
+
+afterEach(() => {
+  vi.resetModules()
+})
+
+describe("OpenRouter SDK client", () => {
+  it("uses the OpenRouter base URL and server key", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue(jsonResponse(providerResponse()))
+    const { createOpenRouterClient } = await import("../src/lib/openrouter.js")
+    const client = createOpenRouterClient({ apiKey: "test_key", maxRetries: 0, fetch: fetchSpy })
+
+    await client.chat.completions.create({
+      model: "openai/gpt-oss-120b:free",
+      messages: [{ role: "user", content: "Hello" }]
+    })
+
+    expect(fetchSpy).toHaveBeenCalledOnce()
+    const [url, options] = fetchSpy.mock.calls[0]
+    expect(String(url)).toBe("https://openrouter.ai/api/v1/chat/completions")
+    expect(new Headers(options.headers).get("authorization")).toBe("Bearer test_key")
+  })
+
+  it("retries a temporary failure within the SDK budget", async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ error: { message: "Busy" } }, 503))
+      .mockResolvedValueOnce(jsonResponse(providerResponse()))
+    const { createOpenRouterClient } = await import("../src/lib/openrouter.js")
+    const client = createOpenRouterClient({ apiKey: "test_key", maxRetries: 2, fetch: fetchSpy })
+
+    await client.chat.completions.create({
+      model: "openai/gpt-oss-120b:free",
+      messages: [{ role: "user", content: "Hello" }]
+    })
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it("does not retry an invalid key", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue(jsonResponse({ error: { message: "Invalid key" } }, 401))
+    const { createOpenRouterClient } = await import("../src/lib/openrouter.js")
+    const client = createOpenRouterClient({ apiKey: "bad_key", maxRetries: 2, fetch: fetchSpy })
+
+    await expect(client.chat.completions.create({
+      model: "openai/gpt-oss-120b:free",
+      messages: [{ role: "user", content: "Hello" }]
+    })).rejects.toBeInstanceOf(OpenAI.AuthenticationError)
+
+    expect(fetchSpy).toHaveBeenCalledOnce()
+  })
+})
