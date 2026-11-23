@@ -5,7 +5,7 @@ import { jsonResponse, providerResponse } from "./fixtures/provider.js"
 beforeEach(() => {
   process.env.OPENROUTER_API_KEY = "test_key"
   process.env.OPENROUTER_MODEL = "openrouter/free"
-  process.env.OPENROUTER_MAX_TOKENS = "180"
+  process.env.OPENROUTER_MAX_TOKENS = "500"
 })
 
 afterEach(() => {

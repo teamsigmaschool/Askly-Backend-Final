@@ -9,7 +9,8 @@ export async function createAnswer(question, client = openrouter) {
       { role: "user", content: question }
     ],
     reasoning: {
-      enabled: false
+      effort: "low",
+      exclude: true
     },
     max_completion_tokens: env.OPENROUTER_MAX_TOKENS
   })
