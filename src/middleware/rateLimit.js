@@ -12,7 +12,7 @@ export function createUserRateLimit({ limit = 5, windowMs = 60_000 } = {}) {
     }
 
     if (record.count >= limit) {
-      return response.status(429).json({ code: "RATE_LIMITED", message: "Please wait before asking again" })
+      return response.status(429).json({ error: "TOO_MANY_QUESTIONS", message: "You have sent too many questions. Try again shortly." })
     }
 
     record.count += 1
