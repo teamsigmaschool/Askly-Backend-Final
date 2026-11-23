@@ -4,7 +4,7 @@ import { jsonResponse, providerResponse } from "./fixtures/provider.js"
 
 beforeEach(() => {
   process.env.OPENROUTER_API_KEY = "test_key"
-  process.env.OPENROUTER_MODEL = "openai/gpt-oss-120b:free"
+  process.env.OPENROUTER_MODEL = "openrouter/free"
   process.env.OPENROUTER_MAX_TOKENS = "180"
 })
 
@@ -19,7 +19,7 @@ describe("OpenRouter SDK client", () => {
     const client = createOpenRouterClient({ apiKey: "test_key", maxRetries: 0, fetch: fetchSpy })
 
     await client.chat.completions.create({
-      model: "openai/gpt-oss-120b:free",
+      model: "openrouter/free",
       messages: [{ role: "user", content: "Hello" }]
     })
 
@@ -38,7 +38,7 @@ describe("OpenRouter SDK client", () => {
     const client = createOpenRouterClient({ apiKey: "test_key", maxRetries: 2, fetch: fetchSpy })
 
     await client.chat.completions.create({
-      model: "openai/gpt-oss-120b:free",
+      model: "openrouter/free",
       messages: [{ role: "user", content: "Hello" }]
     })
 
@@ -51,7 +51,7 @@ describe("OpenRouter SDK client", () => {
     const client = createOpenRouterClient({ apiKey: "bad_key", maxRetries: 2, fetch: fetchSpy })
 
     await expect(client.chat.completions.create({
-      model: "openai/gpt-oss-120b:free",
+      model: "openrouter/free",
       messages: [{ role: "user", content: "Hello" }]
     })).rejects.toBeInstanceOf(OpenAI.AuthenticationError)
 

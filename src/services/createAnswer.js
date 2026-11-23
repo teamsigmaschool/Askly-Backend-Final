@@ -8,6 +8,9 @@ export async function createAnswer(question, client = openrouter) {
       { role: "system", content: "Answer clearly in no more than two sentences." },
       { role: "user", content: question }
     ],
+    reasoning: {
+      enabled: false
+    },
     max_completion_tokens: env.OPENROUTER_MAX_TOKENS
   })
 
