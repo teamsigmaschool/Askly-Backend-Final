@@ -1,6 +1,6 @@
 import OpenAI from "openai"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { jsonResponse, providerResponse } from "./fixtures/provider.js"
+import { failureFixtures, jsonResponse, providerResponse } from "./fixtures/provider.js"
 
 beforeEach(() => {
   process.env.OPENROUTER_API_KEY = "test_key"
@@ -43,6 +43,29 @@ describe("OpenRouter SDK client", () => {
     })
 
     expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it("stops waiting when the timeout is reached", async () => {
+    const fetchSpy = vi.fn((_url, { signal }) => {
+      return new Promise((resolve, reject) => {
+        signal.addEventListener("abort", () => reject(signal.reason), { once: true })
+        failureFixtures.slow().then(resolve, reject)
+      })
+    })
+    const { createOpenRouterClient } = await import("../src/lib/openrouter.js")
+    const client = createOpenRouterClient({
+      apiKey: "test_key",
+      timeout: 50,
+      maxRetries: 0,
+      fetch: fetchSpy
+    })
+
+    await expect(client.chat.completions.create({
+      model: "openrouter/free",
+      messages: [{ role: "user", content: "Hello" }]
+    })).rejects.toBeInstanceOf(OpenAI.APIConnectionTimeoutError)
+
+    expect(fetchSpy).toHaveBeenCalledOnce()
   })
 
   it("does not retry an invalid key", async () => {
