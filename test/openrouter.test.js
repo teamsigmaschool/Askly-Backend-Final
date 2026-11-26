@@ -80,4 +80,22 @@ describe("OpenRouter SDK client", () => {
 
     expect(fetchSpy).toHaveBeenCalledOnce()
   })
+
+  it("stops after exhausting the retry budget", async () => {
+    const fetchSpy = vi.fn(async () => failureFixtures.unavailable())
+
+    const { createOpenRouterClient } = await import("../src/lib/openrouter.js")
+
+    const client = createOpenRouterClient({
+      apiKey: "test_key",
+      fetch: fetchSpy
+    })
+
+    await expect(client.chat.completions.create({
+      model: "openrouter/free",
+      messages: [{ role: "user", content: "Hello" }]
+    })).rejects.toBeInstanceOf(OpenAI.InternalServerError)
+
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+  })
 })
